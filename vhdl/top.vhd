@@ -1,35 +1,10 @@
 ----------------------------------------------------------------------------------
--- Company:
--- Engineer:
---
--- Create Date: 12/21/2024 12:35:12 PM
--- Design Name:
--- Module Name: top - Behavioral
--- Project Name:
--- Target Devices:
--- Tool Versions:
--- Description:
---
--- Dependencies:
---
--- Revision:
--- Revision 0.01 - File Created
--- Additional Comments:
---
 ----------------------------------------------------------------------------------
 
 library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
 use IEEE.STD_LOGIC_UNSIGNED.all;
 use IEEE.NUMERIC_STD.ALL;
-
--- Uncomment the following library declaration if using
--- arithmetic functions with Signed or Unsigned values
-
--- Uncomment the following library declaration if instantiating
--- any Xilinx leaf cells in this code.
--- library UNISIM;
--- use UNISIM.VComponents.all;
 
 entity top is
     Port(
@@ -50,14 +25,21 @@ end top;
 ARCHITECTURE Behavioral of top is
 
     signal displayed_number     : STD_LOGIC_VECTOR (15 downto 0);
+    signal displayed_number2    : std_logic_vector (15 downto 0);
+    signal random_number        : std_logic_vector (15 downto 0);
     signal buttons              : STD_LOGIC_VECTOR (4 downto 0);
     signal LED_BCD              : STD_LOGIC_VECTOR (3 downto 0);
+    signal sr_rand              : std_logic_vector (31 downto 0);
+    
+    signal trigger_counter      : STD_LOGIC_VECTOR (31 downto 0);
+    signal trigger              : STD_LOGIC;    
+    signal ready_counter        : STD_LOGIC_VECTOR (3 downto 0);
 
     -- counter to cycle through the four numeric displays
     signal select_counter       : STD_LOGIC_VECTOR(1 downto 0);
     signal segment_mux          : STD_LOGIC_VECTOR(15 downto 0);
     signal selected             : STD_LOGIC_VECTOR(1 downto 0);
-    signal state                : STD_LOGIC_VECTOR(15 downto 0);
+    
     signal high                 : STD_LOGIC;
     signal btnC_debounced       : STD_LOGIC;
     signal btnL_debounced       : STD_LOGIC;
@@ -66,6 +48,14 @@ ARCHITECTURE Behavioral of top is
     signal btnD_debounced       : STD_LOGIC;
     signal btn_pressed          : STD_LOGIC;
 
+    ---------------------------------------------------------------------------
+
+    function psuedo_random_shift_register(
+        x : std_logic_vector(31 downto 0)
+    ) return std_logic_vector is
+    begin
+        return x(30 downto 0) & (x(0) xnor x(1) xnor x(21) xnor x(31));
+    end function;
     ----------------------------------------------------------------------------
     component debounce
         Port(
@@ -82,7 +72,6 @@ ARCHITECTURE Behavioral of top is
     -- Debounce all the buttons
     ----------------------------------------------------------------------------
     high <= '1';
-
 
     c0: debounce
         port map(clock_100Mhz, high, btnC, btnC_debounced);
@@ -105,13 +94,13 @@ ARCHITECTURE Behavioral of top is
                     btnD_debounced or
                     btnC_debounced);
 
-    buttons(0) <= btnL_debounced;
-    buttons(1) <= btnR_debounced;
-    buttons(2) <= btnU_debounced;
-    buttons(3) <= btnD_debounced;
-    buttons(4) <= btnC_debounced;
-
-    led(4 downto 0) <= buttons;
+    -- buttons(0) <= btnL_debounced;
+    -- buttons(1) <= btnR_debounced;
+    -- buttons(2) <= btnU_debounced;
+    -- buttons(3) <= btnD_debounced;
+    -- buttons(4) <= btnC_debounced;
+    --
+    -- led(4 downto 0) <= buttons;
 
 --    process(btnL_debounced, btnR_debounced, btnU_debounced, btnD_debounced, btnC_debounced)
 --    begin
@@ -119,51 +108,52 @@ ARCHITECTURE Behavioral of top is
 --
 --    end process;
 
-    process(btn_pressed)
+    process(clock_100Mhz) begin
+        if(rising_edge(clock_100Mhz)) then
+            trigger_counter <= trigger_counter + 1;
+--            if trigger_counter = x"2faf08" then
+            -- if trigger_counter = x"632ea00" then
+            if trigger_counter = x"632ea0" then
+            -- if trigger_counter = x"632ea00" then
+                trigger <= '1';
+                trigger_counter <= x"00000000";
+            else    
+                trigger <= '0';
+                
+           end if;
+        end if;
+        
+    end process;
+          
+           
+    -------------------------------------------------------------
+    -- Since all that is being done here is a random number
+    -- generation, might as well go as fast as component debounce
+    -------------------------------------------------------------
+    process(clock_100Mhz)
     begin
-        if rising_edge(btn_pressed) then
+        if rising_edge(clock_100Mhz) then
 
-            if btnC_debounced = '1' then
-                state <= x"0000";
-
-            elsif btnL_debounced = '1' then
-
-               case state is
-                    when x"0000" =>
-                        state <= x"0002";
-                    when x"0001" =>
-                        state <= x"0002";
-                    when x"0002" =>
-                        state <= x"0003";
-                    when x"0003" =>
-                        state <= x"0002";
-                    when others =>
-                        state <= x"FFFF";
-                end case;
-
-            elsif btnR_debounced = '1' then
-
-                case state is
-                    when x"0000" =>
-                        state <= x"0001";
-                    when x"0001" =>
-                        state <= x"0003";
-                    when x"0002" =>
-                        state <= x"0003";
-                    when x"0003" =>
-                        state <= x"0001";
-                    when others =>
-                        state <= x"FFFF";
-                end case;
-
-            end if; -- btnC_debounced
-        end if; -- rising_edge(btn_pressed)
-
-        displayed_number <= state;
-
+            sr_rand <= psuedo_random_shift_register(x => sr_rand);
+            random_number(15 downto 1) <= random_number(14 downto 0) ;
+            random_number(0) <= sr_rand(0);
+        end if;
     end process;
 
+    process(trigger)
+    begin
+        if rising_edge(trigger) then
+            if btn_pressed = '0' then
+                displayed_number <= random_number;
+            end if;
+        end if;
+    end process;
+    
+    --led(3 downto 0) <= ready_counter;
+    --led(15 downto 4) <= random_number(11 downto 0);
+    led <= displayed_number;
 
+    -- This causes the displayed number to be output on the seven segment display
     ----------------------------------------------------------------------------
     process(LED_BCD)
     begin
@@ -178,7 +168,7 @@ ARCHITECTURE Behavioral of top is
             when "0111" => LED_out <= "0001111"; -- "7"
             when "1000" => LED_out <= "0000000"; -- "8"
             when "1001" => LED_out <= "0000100"; -- "9"
-            when "1010" => LED_out <= "0001000"; -- a
+            when "1010" => LED_out <= "0001000"; -- A
             when "1011" => LED_out <= "1100000"; -- b
             when "1100" => LED_out <= "0110001"; -- C
             when "1101" => LED_out <= "1000010"; -- d
@@ -193,7 +183,7 @@ ARCHITECTURE Behavioral of top is
         end if;
     end process;
 
-    selected <= segment_mux(15 downto 14);
+    selected <= segment_mux(13 downto 12);
     ----------------------------------------------------------------------------
     -- 4-to-1 MUX to generate anode activating signals for 4 LEDs
     ----------------------------------------------------------------------------

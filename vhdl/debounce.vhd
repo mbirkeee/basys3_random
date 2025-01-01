@@ -51,7 +51,7 @@ BEGIN
     VARIABLE count :  INTEGER RANGE 0 TO cycles;  --counter for timing
     -- VARIABLE count :  INTEGER RANGE 0 TO 50_000_000;  --counter for timing
   BEGIN
-    IF(reset_n = '0') THEN                        --reset
+    IF(reset_n = '0') THEN                          --reset
       flipflops(1 DOWNTO 0) <= "00";                 --clear input flipflops
       result <= '0';                                 --clear result register
     -- ELSIF(clk'EVENT and clk = '1') THEN           --rising clock edge
