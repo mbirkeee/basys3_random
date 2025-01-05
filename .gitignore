@@ -1,0 +1,7 @@
+vivado/vivado.hw/*
+vivado/vivado.cache/*
+vivado/vivado.runs/*
+vivado/vivado.srcs/*
+
+# Pycharm meta directory
+.idea/*
