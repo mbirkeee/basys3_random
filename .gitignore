@@ -2,6 +2,8 @@ vivado/vivado.hw/*
 vivado/vivado.cache/*
 vivado/vivado.runs/*
 vivado/vivado.srcs/*
-
+vivado/vivado.sim/*
+vivado/vivado.ip_user_files/*
+vivado/synth_1/*
 # Pycharm meta directory
 .idea/*
