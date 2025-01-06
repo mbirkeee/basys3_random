@@ -88,12 +88,17 @@ ARCHITECTURE Behavioral of top is
     c4: debounce
         port map(clock_100Mhz, high, btnD, btnD_debounced);
 
+--    btn_pressed <= (btnL_debounced or
+--                    btnR_debounced or
+--                    btnU_debounced or
+--                    btnD_debounced or
+--                    btnC_debounced);
+
     btn_pressed <= (btnL_debounced or
                     btnR_debounced or
                     btnU_debounced or
-                    btnD_debounced or
-                    btnC_debounced);
-
+                    btnD_debounced);
+                    
     -- buttons(0) <= btnL_debounced;
     -- buttons(1) <= btnR_debounced;
     -- buttons(2) <= btnU_debounced;
@@ -113,14 +118,24 @@ ARCHITECTURE Behavioral of top is
             trigger_counter <= trigger_counter + 1;
 --            if trigger_counter = x"2faf08" then
             -- if trigger_counter = x"632ea00" then
-            if trigger_counter = x"632ea0" then
-            -- if trigger_counter = x"632ea00" then
-                trigger <= '1';
-                trigger_counter <= x"00000000";
-            else    
-                trigger <= '0';
+            if btnC_debounced = '1' then
+                if trigger_counter > x"632ea" then
+                -- if trigger_counter = x"632ea00" then
+                    trigger <= '1';
+                    trigger_counter <= x"00000000";
+                else    
+                    trigger <= '0';
+                end if;
+            else
+                if trigger_counter > x"632ea0" then
+                -- if trigger_counter = x"632ea00" then
+                    trigger <= '1';
+                    trigger_counter <= x"00000000";
+                else    
+                    trigger <= '0';
+                end if;
                 
-           end if;
+            end if;
         end if;
         
     end process;
